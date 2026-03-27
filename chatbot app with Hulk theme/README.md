@@ -25,6 +25,15 @@ The UI follows a Hulk/Bruce Banner inspired color style:
 - A modern web browser (Chrome, Edge, Firefox)
 - A Gemini API key from Google AI Studio
 
+## How to Get a Gemini API Key
+
+1. Go to [Google AI Studio](https://aistudio.google.com/).
+2. Sign in with your Google account.
+3. Open **Get API key** (or **API keys**) from the dashboard.
+4. Click **Create API key** and choose a project (or create one if prompted).
+5. Copy the generated API key.
+6. Open this app, paste the key into the **Gemini API Key** field, and click **Save Key**.
+
 ## How to Download This Project
 
 ### Option 1: Clone from GitHub
