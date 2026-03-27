@@ -15,6 +15,7 @@ The UI follows a Hulk/Bruce Banner inspired color style:
 
 ## Features
 
+- Role-themed chat labels: user as **Bruce Banner**, assistant as **Hulk**
 - Chat with Google Gemini from the browser
 - Clean, responsive UI
 - API key saved in browser `localStorage`

@@ -16,7 +16,7 @@
 
 body {
   margin: 0;
-  min-height: 100vh;
+  height: 100vh;
   font-family: "Segoe UI", Roboto, sans-serif;
   color: var(--text);
   background: linear-gradient(130deg, #111319 0%, #221736 60%, #101216 100%);
@@ -47,14 +47,14 @@ body {
 
 .app {
   width: min(900px, 92vw);
-  height: min(90vh, 860px);
-  margin: 5vh auto;
+  height: 100vh;
+  margin: 0 auto;
   background: rgba(20, 24, 34, 0.9);
   border: 1px solid var(--panel-border);
-  border-radius: 18px;
+  border-radius: 0;
   backdrop-filter: blur(6px);
   display: grid;
-  grid-template-rows: auto auto 1fr auto;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
   box-shadow: 0 0 0 1px rgba(88, 208, 66, 0.12), 0 20px 40px rgba(0, 0, 0, 0.4);
   overflow: hidden;
 }
@@ -138,10 +138,12 @@ input:focus {
 
 .chat-window {
   padding: 1rem 1.2rem;
+  padding-bottom: 1.25rem;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  min-height: 0;
 }
 
 .message {
@@ -173,11 +175,22 @@ input:focus {
 
 .chat-form {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
   gap: 0.6rem;
   padding: 1rem 1.2rem;
   border-top: 1px solid var(--panel-border);
   background: rgba(20, 24, 34, 0.95);
+}
+
+.chat-form input {
+  height: 44px;
+}
+
+.chat-form .btn {
+  height: 44px;
+  min-width: 84px;
+  align-self: center;
 }
 
 .btn {
@@ -209,9 +222,9 @@ input:focus {
 
 @media (max-width: 680px) {
   .app {
-    width: 96vw;
-    height: 94vh;
-    margin: 3vh auto;
+    width: 100vw;
+    height: 100vh;
+    margin: 0;
   }
 
   .api-row,

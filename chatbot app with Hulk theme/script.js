@@ -2,6 +2,8 @@ const PREFERRED_MODELS = ["gemini-2.0-flash", "gemini-2.0-flash-lite", "gemini-1
 const STORAGE_KEY = "gemini_api_key";
 // Keep blank in git; set locally only if needed.
 const EMBEDDED_API_KEY = "";
+const USER_NAME = "Bruce Banner";
+const AGENT_NAME = "Hulk";
 
 const chatWindow = document.getElementById("chatWindow");
 const chatForm = document.getElementById("chatForm");
@@ -17,7 +19,13 @@ let conversation = [];
 function addMessage(text, role = "system") {
   const div = document.createElement("div");
   div.className = `message ${role}`;
-  div.textContent = text;
+  if (role === "user") {
+    div.textContent = `${USER_NAME}: ${text}`;
+  } else if (role === "bot") {
+    div.textContent = `${AGENT_NAME}: ${text}`;
+  } else {
+    div.textContent = text;
+  }
   chatWindow.appendChild(div);
   chatWindow.scrollTop = chatWindow.scrollHeight;
 }
