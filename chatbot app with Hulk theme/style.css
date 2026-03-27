@@ -87,10 +87,20 @@ body {
   font-weight: 600;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
 .api-panel {
   padding: 1rem 1.2rem;
   border-bottom: 1px solid var(--panel-border);
   background: rgba(27, 31, 40, 0.85);
+}
+
+.api-panel.hidden {
+  display: none;
 }
 
 .api-panel label {
@@ -192,6 +202,11 @@ input:focus {
   filter: brightness(1.05);
 }
 
+.btn-small {
+  padding: 0.45rem 0.75rem;
+  font-size: 0.8rem;
+}
+
 @media (max-width: 680px) {
   .app {
     width: 96vw;
@@ -206,5 +221,9 @@ input:focus {
 
   .message {
     max-width: 95%;
+  }
+
+  .header-actions {
+    gap: 0.4rem;
   }
 }

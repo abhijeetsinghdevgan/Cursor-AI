@@ -1,11 +1,15 @@
-const MODEL = "gemini-2.0-flash";
+const PREFERRED_MODELS = ["gemini-2.0-flash", "gemini-2.0-flash-lite", "gemini-1.5-flash"];
 const STORAGE_KEY = "gemini_api_key";
+// Keep blank in git; set locally only if needed.
+const EMBEDDED_API_KEY = "";
 
 const chatWindow = document.getElementById("chatWindow");
 const chatForm = document.getElementById("chatForm");
 const messageInput = document.getElementById("messageInput");
 const apiKeyInput = document.getElementById("apiKey");
 const saveKeyBtn = document.getElementById("saveKeyBtn");
+const apiPanel = document.getElementById("apiPanel");
+const toggleApiPanelBtn = document.getElementById("toggleApiPanelBtn");
 const sendBtn = document.getElementById("sendBtn");
 
 let conversation = [];
@@ -24,8 +28,22 @@ function setSending(isSending) {
 }
 
 function loadApiKey() {
-  const saved = localStorage.getItem(STORAGE_KEY) || "";
+  const saved = localStorage.getItem(STORAGE_KEY) || EMBEDDED_API_KEY || "";
   apiKeyInput.value = saved;
+}
+
+function hasApiKeyConfigured() {
+  return Boolean((localStorage.getItem(STORAGE_KEY) || EMBEDDED_API_KEY || "").trim());
+}
+
+function setApiPanelVisibility(visible) {
+  if (visible) {
+    apiPanel.classList.remove("hidden");
+    toggleApiPanelBtn.textContent = "Hide API Key";
+    return;
+  }
+  apiPanel.classList.add("hidden");
+  toggleApiPanelBtn.textContent = "Change API Key";
 }
 
 function saveApiKey() {
@@ -36,29 +54,37 @@ function saveApiKey() {
   }
   localStorage.setItem(STORAGE_KEY, key);
   addMessage("API key saved locally in your browser.", "system");
+  setApiPanelVisibility(false);
 }
 
-async function askGemini(userText) {
-  const apiKey = localStorage.getItem(STORAGE_KEY) || apiKeyInput.value.trim();
-  if (!apiKey) {
-    throw new Error("No API key found. Save your Gemini API key first.");
+function buildFriendlyGeminiError(status, data, rawText) {
+  const apiMessage = data?.error?.message || "";
+  const apiStatus = data?.error?.status || "";
+  const retryDelay = data?.error?.details?.find(
+    (d) => d["@type"] === "type.googleapis.com/google.rpc.RetryInfo"
+  )?.retryDelay;
+
+  if (status === 429 || apiStatus === "RESOURCE_EXHAUSTED") {
+    let msg =
+      "Gemini quota/rate limit reached for this API key or project. " +
+      "Please check Google AI Studio usage, wait briefly, or use a key/project with available quota.";
+
+    if (retryDelay) {
+      msg += ` Retry suggested by API: ${retryDelay}.`;
+    }
+    return msg;
   }
 
+  if (status === 401 || status === 403) {
+    return "Authentication failed. Verify your Gemini API key and project permissions.";
+  }
+
+  return apiMessage || rawText || `Gemini request failed with status ${status}.`;
+}
+
+async function requestGeminiWithModel(model, apiKey, payload) {
   const url =
-    `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${encodeURIComponent(apiKey)}`;
-
-  conversation.push({
-    role: "user",
-    parts: [{ text: userText }]
-  });
-
-  const payload = {
-    contents: conversation,
-    generationConfig: {
-      temperature: 0.7,
-      maxOutputTokens: 512
-    }
-  };
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
 
   const res = await fetch(url, {
     method: "POST",
@@ -69,24 +95,116 @@ async function askGemini(userText) {
   });
 
   if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Gemini request failed: ${res.status} ${err}`);
+    const rawText = await res.text();
+    let parsed = null;
+    try {
+      parsed = JSON.parse(rawText);
+    } catch {
+      parsed = null;
+    }
+    return {
+      ok: false,
+      status: res.status,
+      parsed,
+      rawText
+    };
   }
 
   const data = await res.json();
-  const modelText =
-    data?.candidates?.[0]?.content?.parts?.map((p) => p.text).join("\n").trim() ||
-    "No response text returned.";
+  return { ok: true, data };
+}
+
+async function listSupportedModels(apiKey) {
+  const url =
+    `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`;
+  const res = await fetch(url);
+  if (!res.ok) return [];
+
+  const data = await res.json();
+  const models = data?.models || [];
+  return models
+    .filter((m) => Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes("generateContent"))
+    .map((m) => (m.name || "").replace("models/", ""))
+    .filter(Boolean);
+}
+
+function buildModelOrder(availableModels) {
+  if (!availableModels.length) return PREFERRED_MODELS;
+
+  const preferred = PREFERRED_MODELS.filter((m) => availableModels.includes(m));
+  const otherGemini = availableModels.filter(
+    (m) => m.startsWith("gemini-") && !preferred.includes(m)
+  );
+  return [...preferred, ...otherGemini];
+}
+
+async function askGemini(userText) {
+  const apiKey =
+    localStorage.getItem(STORAGE_KEY) || EMBEDDED_API_KEY || apiKeyInput.value.trim();
+  if (!apiKey) {
+    throw new Error("No API key found. Save your Gemini API key first.");
+  }
 
   conversation.push({
-    role: "model",
-    parts: [{ text: modelText }]
+    role: "user",
+    parts: [{ text: userText }]
   });
+  const userMessageIndex = conversation.length - 1;
 
-  return modelText;
+  const payload = {
+    contents: conversation,
+    generationConfig: {
+      temperature: 0.7,
+      maxOutputTokens: 512
+    }
+  };
+
+  const availableModels = await listSupportedModels(apiKey);
+  const modelsToTry = buildModelOrder(availableModels);
+  if (!modelsToTry.length) {
+    conversation.splice(userMessageIndex, 1);
+    throw new Error(
+      "No Gemini models with generateContent are available for this API key/project."
+    );
+  }
+
+  let finalError = null;
+  for (const model of modelsToTry) {
+    const result = await requestGeminiWithModel(model, apiKey, payload);
+    if (result.ok) {
+      const modelText =
+        result.data?.candidates?.[0]?.content?.parts
+          ?.map((p) => p.text)
+          .join("\n")
+          .trim() || "No response text returned.";
+
+      conversation.push({
+        role: "model",
+        parts: [{ text: modelText }]
+      });
+
+      return modelText;
+    }
+
+    finalError = buildFriendlyGeminiError(result.status, result.parsed, result.rawText);
+  }
+
+  // Remove the pending user turn from conversation if all model calls fail.
+  conversation.splice(userMessageIndex, 1);
+  throw new Error(
+    finalError ||
+      "Gemini request failed for all configured models. Check API key, quota, and model availability."
+  );
 }
 
 saveKeyBtn.addEventListener("click", saveApiKey);
+toggleApiPanelBtn.addEventListener("click", () => {
+  const isHidden = apiPanel.classList.contains("hidden");
+  setApiPanelVisibility(isHidden);
+  if (isHidden) {
+    apiKeyInput.focus();
+  }
+});
 
 chatForm.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -109,4 +227,10 @@ chatForm.addEventListener("submit", async (event) => {
 });
 
 loadApiKey();
-addMessage("Welcome to GammaChat. Save your Gemini API key and start chatting.", "system");
+if (hasApiKeyConfigured()) {
+  setApiPanelVisibility(false);
+  addMessage("Welcome to GammaChat. API key detected. Start chatting.", "system");
+} else {
+  setApiPanelVisibility(true);
+  addMessage("Welcome to GammaChat. Save your Gemini API key and start chatting.", "system");
+}

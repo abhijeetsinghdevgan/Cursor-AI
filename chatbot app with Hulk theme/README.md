@@ -18,6 +18,8 @@ The UI follows a Hulk/Bruce Banner inspired color style:
 - Chat with Google Gemini from the browser
 - Clean, responsive UI
 - API key saved in browser `localStorage`
+- API key panel auto-hides after saving (can be reopened with **Change API Key**)
+- Auto-detects supported Gemini models before sending requests
 - Simple message bubbles for user and bot
 
 ## Prerequisites
@@ -54,9 +56,10 @@ cd "Cursor-AI/chatbot app with Hulk theme"
 
 1. Open `index.html` in your browser.
 2. Paste your Gemini API key into the input field.
-3. Click **Save Key**.
+3. Click **Save Key** (the key panel will hide automatically).
 4. Type a message and click **Send**.
-5. Verify that Gemini replies appear in the chat window.
+5. If needed, click **Change API Key** in the header to edit/update your key.
+6. Verify that Gemini replies appear in the chat window.
 
 ## Suggested Self-Testing Checklist
 
@@ -69,4 +72,5 @@ cd "Cursor-AI/chatbot app with Hulk theme"
 ## Important Note (Security)
 
 This app calls Gemini directly from the browser, so your API key is used client-side.
+Keep `EMBEDDED_API_KEY` in `script.js` blank before committing/pushing to GitHub.
 For production use, move API calls to a backend proxy to keep keys private.

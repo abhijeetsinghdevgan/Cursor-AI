@@ -16,10 +16,15 @@
           <h1>GammaChat</h1>
           <p>Chat with Google Gemini in Hulk/Bruce Banner style.</p>
         </div>
-        <span class="badge">Gamma Powered</span>
+        <div class="header-actions">
+          <span class="badge">Gamma Powered</span>
+          <button id="toggleApiPanelBtn" class="btn btn-secondary btn-small" type="button">
+            Change API Key
+          </button>
+        </div>
       </header>
 
-      <section class="api-panel">
+      <section id="apiPanel" class="api-panel">
         <label for="apiKey">Gemini API Key</label>
         <div class="api-row">
           <input
