@@ -49,7 +49,7 @@ function addMessage(text, role = "system") {
 
 function setSending(isSending) {
   sendBtn.disabled = isSending;
-  sendBtn.textContent = isSending ? "Thinking..." : "Send";
+  sendBtn.textContent = isSending ? "SMASHING..." : "SMASH!!";
 }
 
 function loadApiKey() {
