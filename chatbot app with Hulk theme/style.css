@@ -148,29 +148,68 @@ input:focus {
 
 .message {
   max-width: 82%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  line-height: 1.4;
+}
+
+.message-bubble {
   padding: 0.75rem 0.9rem;
   border-radius: 14px;
-  line-height: 1.4;
   white-space: pre-wrap;
   word-wrap: break-word;
 }
 
+.message-text {
+  display: block;
+}
+
+.message-name {
+  display: block;
+  margin-top: 0.05rem;
+  text-align: right;
+  font-size: 0.65rem;
+  letter-spacing: 0.02em;
+  opacity: 0.78;
+}
+
 .message.user {
   align-self: flex-end;
-  background: linear-gradient(130deg, var(--banner-purple), var(--banner-purple-soft));
 }
 
 .message.bot {
   align-self: flex-start;
+}
+
+.message.user .message-bubble {
+  background: linear-gradient(130deg, var(--banner-purple), var(--banner-purple-soft));
+}
+
+.message.bot .message-bubble {
   background: linear-gradient(130deg, #1f2d23, #1a4523);
   border: 1px solid rgba(88, 208, 66, 0.35);
 }
 
 .message.system {
   align-self: center;
-  background: #283047;
   color: #d7def3;
   font-size: 0.9rem;
+}
+
+.message.system .message-bubble {
+  background: #283047;
+}
+
+.typing-status {
+  min-height: 1.2rem;
+  padding: 0.25rem 1.2rem 0.45rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.typing-status.hidden {
+  visibility: hidden;
 }
 
 .chat-form {

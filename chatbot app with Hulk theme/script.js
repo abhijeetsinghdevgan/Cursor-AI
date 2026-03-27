@@ -13,19 +13,36 @@ const saveKeyBtn = document.getElementById("saveKeyBtn");
 const apiPanel = document.getElementById("apiPanel");
 const toggleApiPanelBtn = document.getElementById("toggleApiPanelBtn");
 const sendBtn = document.getElementById("sendBtn");
+const typingStatus = document.getElementById("typingStatus");
 
 let conversation = [];
+let waitingForHulk = false;
 
 function addMessage(text, role = "system") {
   const div = document.createElement("div");
   div.className = `message ${role}`;
-  if (role === "user") {
-    div.textContent = `${USER_NAME}: ${text}`;
-  } else if (role === "bot") {
-    div.textContent = `${AGENT_NAME}: ${text}`;
+
+  if (role === "system") {
+    const bubble = document.createElement("div");
+    bubble.className = "message-bubble";
+    bubble.textContent = text;
+    div.appendChild(bubble);
   } else {
-    div.textContent = text;
+    const bubble = document.createElement("div");
+    bubble.className = "message-bubble";
+
+    const textEl = document.createElement("span");
+    textEl.className = "message-text";
+    textEl.textContent = text;
+    bubble.appendChild(textEl);
+    div.appendChild(bubble);
+
+    const nameEl = document.createElement("span");
+    nameEl.className = "message-name";
+    nameEl.textContent = role === "user" ? USER_NAME : AGENT_NAME;
+    div.appendChild(nameEl);
   }
+
   chatWindow.appendChild(div);
   chatWindow.scrollTop = chatWindow.scrollHeight;
 }
@@ -63,6 +80,21 @@ function saveApiKey() {
   localStorage.setItem(STORAGE_KEY, key);
   addMessage("API key saved locally in your browser.", "system");
   setApiPanelVisibility(false);
+}
+
+function setTypingStatus(role) {
+  if (!role) {
+    typingStatus.textContent = "";
+    typingStatus.classList.add("hidden");
+    return;
+  }
+
+  if (role === "user") {
+    typingStatus.textContent = `🧑‍🔬 ${USER_NAME} is typing...`;
+  } else {
+    typingStatus.textContent = `🧌 ${AGENT_NAME} is typing...`;
+  }
+  typingStatus.classList.remove("hidden");
 }
 
 function buildFriendlyGeminiError(status, data, rawText) {
@@ -219,9 +251,12 @@ chatForm.addEventListener("submit", async (event) => {
   const text = messageInput.value.trim();
   if (!text) return;
 
+  setTypingStatus(null);
   addMessage(text, "user");
   messageInput.value = "";
   setSending(true);
+  waitingForHulk = true;
+  setTypingStatus("bot");
 
   try {
     const reply = await askGemini(text);
@@ -229,8 +264,19 @@ chatForm.addEventListener("submit", async (event) => {
   } catch (error) {
     addMessage(error.message || "Something went wrong.", "system");
   } finally {
+    waitingForHulk = false;
+    setTypingStatus(null);
     setSending(false);
     messageInput.focus();
+  }
+});
+
+messageInput.addEventListener("input", () => {
+  if (waitingForHulk) return;
+  if (messageInput.value.trim()) {
+    setTypingStatus("user");
+  } else {
+    setTypingStatus(null);
   }
 });
 
